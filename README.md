@@ -1,3 +1,7 @@
+This repo is cloned from distiller framework for model compression. I add some new features like `Stochastic Weight Averaging`(SWA) and `LR_Finder`. And just for studying, I remove some unrelated files to slim this project.
+
+
+
 <center> <img src="imgs/banner1.png"></center>
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/NervanaSystems/distiller/blob/master/LICENSE)
