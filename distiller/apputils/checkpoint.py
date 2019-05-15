@@ -32,8 +32,8 @@ from distiller.utils import normalize_module_name
 msglogger = logging.getLogger()
 
 
-def save_checkpoint(epoch, arch, model, optimizer=None, scheduler=None,
-                    extras=None, is_best=False, name=None, dir='.'):
+def save_checkpoint(epoch, arch, model, swa_model=None, swa_n=None, optimizer=None, scheduler=None,
+                    extras=None, is_best=False, name=None, dir='.', swa=None):
     """Save a pytorch training checkpoint
 
     Args:
@@ -75,6 +75,9 @@ def save_checkpoint(epoch, arch, model, optimizer=None, scheduler=None,
         checkpoint['thinning_recipes'] = model.thinning_recipes
     if hasattr(model, 'quantizer_metadata'):
         checkpoint['quantizer_metadata'] = model.quantizer_metadata
+    if swa_model is not None and swa_n is not None:
+        checkpoint['swa_state_dict'] = swa_model.state_dict()
+        checkpoint['swa_n'] = swa_n
 
     checkpoint['extras'] = extras
 
@@ -101,7 +104,7 @@ def get_contents_table(d):
     return tabulate(contents, headers=["Key", "Type", "Value"], tablefmt="fancy_grid")
 
 
-def load_checkpoint(model, chkpt_file, optimizer=None, model_device=None, *, lean_checkpoint=False):
+def load_checkpoint(model, chkpt_file, swa_model=None, swa_n=None, optimizer=None, model_device=None, *, lean_checkpoint=False):
     """Load a pytorch training checkpoint.
 
     Args:
@@ -168,6 +171,12 @@ def load_checkpoint(model, chkpt_file, optimizer=None, model_device=None, *, lea
     model.load_state_dict(checkpoint['state_dict'])
     if model_device is not None:
         model.to(model_device)
+    if swa_model is not None:
+        swa_model.load_state_dict(checkpoint['swa_state_dict'])
+        if model_device is not None:
+           swa_model.to(model_device)
+    if swa_n is not None:
+        swa_n=checkpoint['swa_n']
 
     if lean_checkpoint:
         msglogger.info("=> loaded 'state_dict' from checkpoint '{}'".format(str(chkpt_file)))
@@ -198,7 +207,11 @@ def load_checkpoint(model, chkpt_file, optimizer=None, model_device=None, *, lea
                             if k != 'params')))
     else:
         msglogger.warning('Optimizer could not be loaded from checkpoint.')
-
+        
     msglogger.info("=> loaded checkpoint '{f}' (epoch {e})".format(f=str(chkpt_file),
                                                                    e=checkpoint_epoch))
+    if swa_model is not None and swa_n is not None:
+        return (model, swa_model, swa_n, compression_scheduler, optimizer, start_epoch)
+    
     return (model, compression_scheduler, optimizer, start_epoch)
+    

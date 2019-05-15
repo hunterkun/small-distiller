@@ -92,18 +92,18 @@ def log_execution_env_state(config_path=None, logdir=None, gitroot='.'):
     if (logdir is None) or (config_path is None):
         return
     # clone configuration files to output directory
-    configs_dest = os.path.join(logdir, 'configs')
-    with contextlib.suppress(FileExistsError):
-        os.makedirs(configs_dest)
-    if os.path.exists(os.path.join(configs_dest,
-                                   os.path.basename(config_path))):
-        logger.debug('{} already exists in logdir'.format(
-            os.path.basename(config_path) or config_path))
-    else:
-        try:
-            shutil.copy(config_path, configs_dest)
-        except OSError as e:
-            logger.debug('Failed to copy of config file: {}'.format(str(e)))
+    # configs_dest = os.path.join(logdir, 'configs')
+    # with contextlib.suppress(FileExistsError):
+    #     os.makedirs(configs_dest)
+    # if os.path.exists(os.path.join(configs_dest,
+    #                                os.path.basename(config_path))):
+    #     logger.debug('{} already exists in logdir'.format(
+    #         os.path.basename(config_path) or config_path))
+    # else:
+    try:
+        shutil.copy(config_path, logdir)
+    except OSError as e:
+        logger.debug('Failed to copy of config file: {}'.format(str(e)))
 
 
 def config_pylogger(log_cfg_file, experiment_name, output_dir='logs'):
@@ -116,7 +116,8 @@ def config_pylogger(log_cfg_file, experiment_name, output_dir='logs'):
     TensorBoard, for example.
     """
     timestr = time.strftime("%Y.%m.%d-%H%M%S")
-    exp_full_name = timestr if experiment_name is None else experiment_name + '___' + timestr
+    # exp_full_name = timestr if experiment_name is None else experiment_name + '___' + timestr
+    exp_full_name = timestr if experiment_name is None else experiment_name
     logdir = os.path.join(output_dir, exp_full_name)
     if not os.path.exists(logdir):
         os.makedirs(logdir)
