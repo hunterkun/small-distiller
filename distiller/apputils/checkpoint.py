@@ -104,7 +104,7 @@ def get_contents_table(d):
     return tabulate(contents, headers=["Key", "Type", "Value"], tablefmt="fancy_grid")
 
 
-def load_checkpoint(model, chkpt_file, swa_model=None, swa_n=None, optimizer=None, model_device=None, *, lean_checkpoint=False):
+def load_checkpoint(model, chkpt_file, swa_model=None, swa_n=None, use_swa_model=False, optimizer=None, model_device=None, *, lean_checkpoint=False):
     """Load a pytorch training checkpoint.
 
     Args:
@@ -168,13 +168,20 @@ def load_checkpoint(model, chkpt_file, swa_model=None, swa_n=None, optimizer=Non
 
     if normalize_dataparallel_keys:
             checkpoint['state_dict'] = {normalize_module_name(k): v for k, v in checkpoint['state_dict'].items()}
-    model.load_state_dict(checkpoint['state_dict'])
+
+    if use_swa_model:
+        model.load_state_dict(checkpoint['swa_state_dict'])
+    else:
+        model.load_state_dict(checkpoint['state_dict'])
+
     if model_device is not None:
         model.to(model_device)
+
     if swa_model is not None:
         swa_model.load_state_dict(checkpoint['swa_state_dict'])
         if model_device is not None:
            swa_model.to(model_device)
+
     if swa_n is not None:
         swa_n=checkpoint['swa_n']
 
