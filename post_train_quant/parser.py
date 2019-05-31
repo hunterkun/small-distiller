@@ -118,6 +118,8 @@ def get_parser():
                          help='number of best scores to track and report (default: 1)')
      parser.add_argument('--load-serialized', dest='load_serialized', action='store_true', default=False,
                          help='Load a model without DataParallel wrapping it')
+     
+     # use swa
      parser.add_argument('--use-swa-model', action='store_true', help='use swa model for test')
 
      distiller.quantization.add_post_train_quant_args(parser)

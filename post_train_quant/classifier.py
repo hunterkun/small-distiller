@@ -128,6 +128,18 @@ def main():
     if args.summary:
         return summarize_model(model, args.dataset, which_summary=args.summary)
 
+    activations_collectors = create_activation_stats_collectors(model, *args.activation_stats)
+
+    if args.qe_calibration:
+        msglogger.info('Quantization calibration stats collection enabled:')
+        msglogger.info('\tStats will be collected for {:.1%} of test dataset'.format(args.qe_calibration))
+        msglogger.info('\tSetting constant seeds and converting model to serialized execution')
+        distiller.set_deterministic()
+        model = distiller.make_non_parallel_copy(model)
+        activations_collectors.update(create_quantization_stats_collector(model))
+        args.evaluate = True
+        args.effective_test_size = args.qe_calibration
+
 
     # Load the datasets: the dataset to load is inferred from the model name passed
     # in args.arch.  The default dataset is ImageNet, but if args.arch contains the
@@ -139,13 +151,11 @@ def main():
     msglogger.info('Dataset sizes:\n\ttraining=%d\n\tvalidation=%d\n\ttest=%d',
                    len(train_loader.sampler), len(val_loader.sampler), len(test_loader.sampler))
 
-    activations_collectors = create_activation_stats_collectors(model, *args.activation_stats)
-
     if args.evaluate:
         return evaluate_model(model, criterion, test_loader, pylogger, activations_collectors, args,
                               compression_scheduler)
 
- 
+    
 
 def validate(val_loader, model, criterion, loggers, args, epoch=-1):
     """Model validation"""
@@ -230,8 +240,11 @@ def evaluate_model(model, criterion, test_loader, loggers, activations_collector
         model.to(args.device)
 
     top1, top5, vloss = test(test_loader, model, criterion, loggers, activations_collectors, args=args)
-    
-    msglogger.info('==> Top1: %.3f    Top5: %.3f    Loss: %.3f\n', top1,top5, vloss)
+
+    if args.use_swa_model:
+        msglogger.info('==> SWATop1: %.3f    SWATop5: %.3f    SWALoss: %.3f\n', top1,top5, vloss)
+    else:
+        msglogger.info('==> Top1: %.3f    Top5: %.3f    Loss: %.3f\n', top1,top5, vloss)
 
     if args.quantize_eval:
         checkpoint_name = 'quantized'
@@ -283,6 +296,12 @@ def save_collectors_data(collectors, directory):
         workbook = os.path.join(directory, name)
         msglogger.info("Generating {}".format(workbook))
         collector.save(workbook)
+
+def create_quantization_stats_collector(model):
+    distiller.utils.assign_layer_fq_names(model)
+    return {'test': missingdict({'quantization_stats': QuantCalibrationStatsCollector(
+        model, classes=None, inplace_runtime_check=True, disable_inplace_attrs=True)})}
+                                                                                      
 
 
 if __name__ == '__main__':
