@@ -285,7 +285,6 @@ def create_activation_stats_collectors(model, *phases):
                                                          distiller.utils.activation_channels_means),
         "records":       RecordsActivationStatsCollector(model, classes=[torch.nn.Conv2d])
     })
-
     return {k: (genCollectors() if k in phases else missingdict())
             for k in ('train', 'valid', 'test')}
 

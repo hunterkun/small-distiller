@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 DATA_DIR=${1}
-exp_name=debug
+exp_name=calibration
 out_dir=logs
 # config_file=resnet_cifar_base_fp32.yaml
-# Generating calibration file used for incoming quantization
+# Generating activation stats file for Static Quantization
 # Notice: usage: --qe-stats-file 
 
 if [ "$DATA_DIR" = "cifar10" ]; then
